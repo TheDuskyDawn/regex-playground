@@ -27,7 +27,7 @@ Open http://localhost:8000.
 ## Deploy to GitHub Pages
 
 1. Open repository **Settings → Pages**.
-2. Under **Build and deployment**, choose **GitHub Actions** as the source.
+2. If Pages has not been enabled yet, choose **GitHub Actions** under **Build and deployment** and save. This one-time setting must be done by a repository owner; the GitHub Actions token in this project cannot create the Pages site.
 3. The workflow in `.github/workflows/pages.yml` deploys automatically on pushes to `main`; it can also be started manually from the Actions tab.
 4. After the workflow succeeds, open the Pages URL shown in the workflow deployment summary.
 
