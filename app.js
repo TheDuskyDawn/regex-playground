@@ -246,6 +246,25 @@ $("#builderUse").onclick=()=>{const p=updateBuilderPattern();if(p!==null){load({
 $("[data-builder-preset]").forEach(b=>b.onclick=()=>{builderNodes=builderPresets[b.dataset.builderPreset].map(x=>({value:"",quantifier:"",...x}));renderBuilder();});
 renderBuilder();
 
+
+/* Searchable curated example library */
+const libraryItems=(window.REGEX_LIBRARY||[]).flatMap(group=>group.items.map(item=>({...item,category:group.category})));
+let libraryCategory="All",libraryLimit=30;
+function renderLibrary(){
+ const query=$("#librarySearch").value.trim().toLowerCase();
+ const categories=["All",...(window.REGEX_LIBRARY||[]).map(x=>x.category)];
+ $("#libraryCategories").innerHTML=categories.map(c=>'<button class="filter-chip '+(libraryCategory===c?'active':'')+'" data-library-category="'+esc(c)+'">'+esc(c)+'</button>').join("");
+ const filtered=libraryItems.filter(x=>(libraryCategory==="All"||x.category===libraryCategory)&&(!query||[x.name,x.p,x.description,x.category].join(" ").toLowerCase().includes(query)));
+ $("#libraryStats").innerHTML='<span class="stat">Total examples <b>'+libraryItems.length+'</b></span><span class="stat">Showing <b>'+Math.min(libraryLimit,filtered.length)+' / '+filtered.length+'</b></span><span class="stat">Categories <b>'+(window.REGEX_LIBRARY||[]).length+'</b></span>';
+ $("#libraryResults").innerHTML=filtered.slice(0,libraryLimit).map((x,i)=>'<article class="library-card"><div class="small muted">'+esc(x.category)+'</div><h3>'+esc(x.name)+'</h3><code class="code">/'+esc(x.p)+'/'+esc(x.f)+'</code><p>'+esc(x.description)+'</p><p><b>Try:</b> '+esc(x.t)+'</p><button class="btn primary" data-library-load="'+libraryItems.indexOf(x)+'">Load in playground →</button></article>').join("")||'<div class="item muted">No examples match this search.</div>';
+ $("#libraryMore").hidden=filtered.length<=libraryLimit;
+}
+$("#librarySearch").addEventListener("input",()=>{libraryLimit=30;renderLibrary();});
+$("#libraryCategories").addEventListener("click",e=>{const b=e.target.closest("[data-library-category]");if(!b)return;libraryCategory=b.dataset.libraryCategory;libraryLimit=30;renderLibrary();});
+$("#libraryResults").addEventListener("click",e=>{const b=e.target.closest("[data-library-load]");if(!b)return;const x=libraryItems[Number(b.dataset.libraryLoad)];if(!x)return;load(x);nav("play");});
+$("#libraryMore").onclick=()=>{libraryLimit+=30;renderLibrary();};
+renderLibrary();
+
 load(examples[0]);showLessons();showRef();showRecipes();showQuiz();
 
  
