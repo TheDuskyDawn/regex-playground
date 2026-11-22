@@ -109,7 +109,7 @@ const { convert } = require("../plain-english.js");
 
 test("plain-English converter explains common tokens and flags", () => {
   const result = convert("^\\d{2,4}\\s+cat$", "gi");
-  assert.match(result.text, /start of the input/);
+  assert.match(result.text, /start of the input/);\n  assert.match(convert("cat").text, /literal text “cat”/);
   assert.match(result.text, /digit/);
   assert.match(result.text, /between 2 and 4 times/);
   assert.match(result.text, /ignore uppercase/);
