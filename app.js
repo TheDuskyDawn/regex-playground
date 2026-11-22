@@ -178,4 +178,66 @@ function showQuiz(){let q=quiz[qi],a=answers[qi];$("#quizArea").innerHTML='<span
 $("#quizArea").onclick=e=>{let b=e.target.closest("[data-answer]");if(b){answers[qi]=+b.dataset.answer;showQuiz();}};
 $("#prevQ").onclick=()=>{qi=(qi+quiz.length-1)%quiz.length;showQuiz();};$("#nextQ").onclick=()=>{qi=(qi+1)%quiz.length;showQuiz();};
 $("#installBtn").hidden=true;let installPrompt;addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;$("#installBtn").hidden=false;});$("#installBtn").onclick=async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("#installBtn").hidden=true;}};
+
+const builderLabels={literal:"Literal",digit:"Digit",nonDigit:"Non-digit",word:"Word",whitespace:"Whitespace",any:"Any character",class:"Character class",notClass:"Negated class",group:"Capture group",nonCapture:"Non-capture",alternation:"Alternation",lookahead:"Lookahead",negativeLookahead:"Negative lookahead",lookbehind:"Lookbehind",negativeLookbehind:"Negative lookbehind",boundary:"Word boundary",start:"Start anchor",end:"End anchor"};
+const builderNeedsValue=new Set(["literal","class","notClass","group","nonCapture","alternation","lookahead","negativeLookahead","lookbehind","negativeLookbehind"]);
+const builderNoQuantifier=new Set(["boundary","start","end","lookahead","negativeLookahead","lookbehind","negativeLookbehind"]);
+const builderQuantifiers=["","*","+","?","*?","+?","??","{2}","{3}","{2,4}","{1,}"];
+let builderNodes=[
+ {type:"start",value:"",quantifier:""},
+ {type:"digit",value:"",quantifier:"+"},
+ {type:"literal",value:"-",quantifier:""},
+ {type:"digit",value:"",quantifier:"{2,4}"},
+ {type:"end",value:"",quantifier:""}
+];
+const builderPresets={
+ date:[{type:"start"},{type:"digit",quantifier:"{4}"},{type:"literal",value:"-"},{type:"digit",quantifier:"{2}"},{type:"literal",value:"-"},{type:"digit",quantifier:"{2}"},{type:"end"}],
+ username:[{type:"start"},{type:"class",value:"a-zA-Z0-9_" ,quantifier:"{3,}"},{type:"end"}],
+ word:[{type:"boundary"},{type:"alternation",value:"cat|dog"},{type:"boundary"}],
+ digits:[{type:"start"},{type:"digit",quantifier:"{4}"},{type:"end"}]
+};
+function renderBuilder(){
+ const host=$("#builderNodes");
+ host.innerHTML=builderNodes.map((node,i)=>{
+  const needs=builderNeedsValue.has(node.type),noQ=builderNoQuantifier.has(node.type);
+  const valueLabel=node.type==="literal"?"Text to match":node.type==="class"||node.type==="notClass"?"Characters (e.g. a-z0-9)": "Inner regex (e.g. \\\\d+ or cat|dog)";
+  return '<div class="builder-node" data-node="'+i+'"><span class="node-kind">'+(i+1)+'. '+esc(builderLabels[node.type]||node.type)+'</span><input data-node-value="'+i+'" aria-label="'+esc(valueLabel)+'" placeholder="'+esc(valueLabel)+'" value="'+esc(node.value||"")+'" '+(needs?"":"disabled")+'><select data-node-q="'+i+'" aria-label="Quantifier" '+(noQ?"disabled":"")+'>'+builderQuantifiers.map(q=>'<option value="'+esc(q)+'" '+((node.quantifier||"")===q?"selected":"")+'>'+(q||"No quantifier")+'</option>').join("")+'</select><div class="builder-actions"><button class="btn" data-node-up="'+i+'" aria-label="Move up" '+(i===0?"disabled":"")+'>↑</button><button class="btn" data-node-down="'+i+'" aria-label="Move down" '+(i===builderNodes.length-1?"disabled":"")+'>↓</button><button class="btn" data-node-remove="'+i+'" aria-label="Remove">×</button></div></div>';
+ }).join("");
+ updateBuilderPattern();
+}
+function updateBuilderPattern(){
+ try{
+  const source=RegexBuilder.compile(builderNodes);
+  $("#builderPattern").textContent="/"+source+"/";
+  $("#builderError").textContent="";
+  $("#builderUse").disabled=false;return source;
+ }catch(e){
+  $("#builderPattern").textContent="Pattern is incomplete";
+  $("#builderError").textContent=e.message;
+  $("#builderUse").disabled=true;return null;
+ }
+}
+$("#builderNodes").addEventListener("input",e=>{
+ const i=Number(e.target.dataset.nodeValue);if(Number.isInteger(i)&&builderNodes[i]){builderNodes[i].value=e.target.value;updateBuilderPattern();}
+});
+$("#builderNodes").addEventListener("change",e=>{
+ const i=Number(e.target.dataset.nodeQ);if(Number.isInteger(i)&&builderNodes[i]){builderNodes[i].quantifier=e.target.value;updateBuilderPattern();}
+});
+$("#builderNodes").addEventListener("click",e=>{
+ const up=e.target.closest("[data-node-up]"),down=e.target.closest("[data-node-down]"),remove=e.target.closest("[data-node-remove]");
+ if(up){const i=+up.dataset.nodeUp;if(i>0)[builderNodes[i-1],builderNodes[i]]=[builderNodes[i],builderNodes[i-1]];renderBuilder();}
+ if(down){const i=+down.dataset.nodeDown;if(i<builderNodes.length-1)[builderNodes[i+1],builderNodes[i]]=[builderNodes[i],builderNodes[i+1]];renderBuilder();}
+ if(remove){builderNodes.splice(+remove.dataset.nodeRemove,1);renderBuilder();}
+});
+$("#builderAdd").onclick=()=>{
+ const type=$("#builderType").value;
+ builderNodes.push({type,value:builderNeedsValue.has(type)?"": "",quantifier:""});
+ renderBuilder();
+};
+$("#builderReset").onclick=()=>{builderNodes=builderPresets.date.map(x=>({...x}));renderBuilder();};
+$("#builderCopy").onclick=()=>{const p=updateBuilderPattern();if(p!==null)navigator.clipboard?.writeText(p);};
+$("#builderUse").onclick=()=>{const p=updateBuilderPattern();if(p!==null){load({p,f:"g",t:"2026-11-22\n2025-04-18\nnot-a-date"});nav("play");}};
+$("[data-builder-preset]").forEach(b=>b.onclick=()=>{builderNodes=builderPresets[b.dataset.builderPreset].map(x=>({value:"",quantifier:"",...x}));renderBuilder();});
+renderBuilder();
+
 load(examples[0]);showLessons();showRef();showRecipes();showQuiz();
