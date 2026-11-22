@@ -46,3 +46,37 @@ test("replacement supports capture references", () => {
 test("invalid patterns throw a SyntaxError", () => {
   assert.throws(() => new RegExp("(", "g"), SyntaxError);
 });
+
+const { compile, escapeLiteral } = require("../builder-core.js");
+
+test("visual builder compiles literal text safely", () => {
+  const source = compile([{ type: "literal", value: "a.b+c" }]);
+  assert.equal(source, "a\\.b\\+c");
+  assert.equal(new RegExp(source).test("a.b+c"), true);
+});
+
+test("visual builder combines shorthands and quantifiers", () => {
+  const source = compile([
+    { type: "start" }, { type: "digit", quantifier: "+" },
+    { type: "literal", value: "-" }, { type: "digit", quantifier: "{2,4}" },
+    { type: "end" }
+  ]);
+  assert.equal(source, "^\\\\d+-\\\\d{2,4}$");
+});
+
+test("visual builder supports groups, alternation and lookarounds", () => {
+  assert.equal(compile([{ type: "alternation", value: "cat|dog" }]), "(?:cat|dog)");
+  assert.equal(compile([{ type: "lookahead", value: " USD" }]), "(?= USD)");
+  assert.equal(compile([{ type: "group", value: "\\\\d+" }]), "(\\\\d+)");
+});
+
+test("visual builder rejects malformed classes and quantifiers", () => {
+  assert.throws(() => compile([{ type: "class", value: "" }]), /needs characters/);
+  assert.throws(() => compile([{ type: "literal", value: "x", quantifier: "{9}" }]), /Unsupported quantifier/);
+  assert.throws(() => compile([{ type: "start", quantifier: "+" }]), /cannot have quantifiers/);
+});
+
+test("literal escaping covers regex metacharacters", () => {
+  const literal = ".*+?^$()|[]\\\\";
+  assert.equal(new RegExp(escapeLiteral(literal)).test(literal), true);
+});
