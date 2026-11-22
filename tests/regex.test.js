@@ -80,3 +80,26 @@ test("literal escaping covers regex metacharacters", () => {
   const literal = ".*+?^$()|[]\\";
   assert.equal(new RegExp(escapeLiteral(literal)).test(literal), true);
 });
+
+
+const { trace } = require("../debug-core.js");
+
+test("debug trace records candidate starts, matches and captures", () => {
+  const steps = trace("(cat|dog)", "i", "A CAT dog");
+  assert.equal(steps[0].matched, false);
+  assert.equal(steps[2].match, "CAT");
+  assert.deepEqual(steps[2].captures, ["CAT"]);
+  assert.equal(steps[6].match, "dog");
+});
+
+test("debug trace supports named captures and zero-width matches", () => {
+  const steps = trace("(?<word>\\w+)", "u", "hi!");
+  assert.equal(steps[0].groups.word, "hi");
+  assert.equal(steps[2].matched, false);
+  assert.equal(trace("^", "m", "a\\nb").filter(x => x.matched).length, 2);
+});
+
+test("debug trace rejects oversized input and duplicate flags", () => {
+  assert.throws(() => trace(".", "", "12345", 4), /exceeds/);
+  assert.throws(() => trace(".", "ii", "x"), /duplicates/);
+});
