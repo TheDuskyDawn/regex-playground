@@ -93,10 +93,25 @@ function render(){
  $("#stats").innerHTML='<span class="stat">Matches <b>'+all.length+'</b></span><span class="stat">Flags <b>'+esc(f||"none")+'</b></span><span class="stat">Status <b class="success">Valid</b></span>';
  let html="",pos=0;all.forEach((m,i)=>{let a=m.index,b=a+m[0].length;html+=esc(text.slice(pos,a))+'<mark class="hit" title="Match '+(i+1)+'">'+esc(m[0]||"empty")+'</mark>';pos=b;});html+=esc(text.slice(pos));$("#highlighted").innerHTML=html||esc(text);
  $("#matches").innerHTML=all.length?all.map((m,i)=>'<div class="item"><b>#'+(i+1)+'</b> '+esc(m[0])+' <span class="muted">at '+m.index+'–'+(m.index+m[0].length)+'</span>'+(m.length>1?'<p>Captures: '+m.slice(1).map((v,j)=>'$'+(j+1)+' = '+esc(v??"undefined")).join(" · ")+'</p>':"")+(m.groups?'<p>Named: '+esc(JSON.stringify(m.groups))+'</p>':"")+'</div>').join(""):'<div class="muted">No matches found.</div>';
- $("#replaced").textContent=text.replace(re,$("#replacement").value);explain(p);
+ $("#replaced").textContent=text.replace(re,$("#replacement").value);explain(p);diagnose(p,f,text);
  }catch(e){$("#stats").innerHTML='<span class="error">Invalid regex: '+esc(e.message)+'</span>';$("#highlighted").textContent=text;$("#matches").textContent="Fix the pattern to inspect matches.";$("#replaced").textContent="";}
 }
-function explain(p){let terms=[["\\\\d","digit"],["\\\\w","word character"],["\\\\s","whitespace"],["\\\\b","word boundary"],["\\\\.","any character"],["\\\\*","zero or more"],["\\\\+","one or more"],["\\\\?","optional or lazy"],["\\\\^","start anchor"],["\\\\$","end anchor"],["\\\\[","character class"],["\\\\(","group"],["\\\\|","alternation"],["\\\\(\\\\?","lookaround or special group"]];let found=terms.filter(x=>new RegExp(x[0]).test(p)).map(x=>x[1]);$("#explain").innerHTML=found.length?found.map(x=>'<div class="item">'+esc(x)+'</div>').join(""):'<div class="item muted">Enter a pattern to see syntax hints.</div>';}
+function explain(p){
+ const terms=[[/\\d/,"digit shorthand"],[/\\w/,"word-character shorthand"],[/\\s/,"whitespace shorthand"],[/\\b/,"word boundary"],[/\\\./,"escaped literal dot"],[/\^/,"start anchor"],[/\$/,"end anchor"],[/\[[^\]]*\]/,"character class"],[/\((?!\?)/,"capturing group"],[/\(\?:/,"non-capturing group"],[/\|/,"alternation"],[/\(\?[=!<]/,"lookaround or special group"],[/\{\d+(,\d*)?\}/,"bounded quantifier"],[/[+*?]\?/,"lazy quantifier"]];
+ const found=terms.filter(([re])=>re.test(p)).map(([,label])=>label);
+ $("#explain").innerHTML=found.length?found.map(x=>'<div class="item">'+esc(x)+'</div>').join(""):'<div class="item muted">Enter a pattern to see syntax hints.</div>';
+}
+function diagnose(p,f,t){
+ const notes=[];
+ if(/\([^)]*[+*][^)]*\)[+*{]/.test(p))notes.push(["warning","Nested repetition detected. Some patterns with overlapping alternatives can backtrack heavily; test carefully."]);
+ if(/(?:\*|\+|\?){2,}/.test(p))notes.push(["warning","Adjacent quantifiers are unusual. Check whether a lazy quantifier or grouping was intended."]);
+ if(p==="")notes.push(["info","An empty pattern matches at every position. This may surprise you in replacement and iteration tasks."]);
+ if(!f.includes("g"))notes.push(["info","Global flag is off. The match list still shows all matches, but String.replace changes only the first match."]);
+ if(p.length>180)notes.push(["info","Long pattern: consider splitting it into named, documented pieces for maintainability."]);
+ if(t.length>50000)notes.push(["warning","Large test input. Complex patterns may make the browser unresponsive; native RegExp execution cannot be safely time-limited here."]);
+ if(!notes.length)notes.push(["success","No obvious structural warning found. This heuristic check cannot prove correctness or performance."]);
+ $("#diagnostics").innerHTML=notes.map(([kind,msg])=>'<div class="item '+(kind==="warning"?"error":kind==="success"?"success":"muted")+'">'+esc(msg)+'</div>').join("");
+}
 function load(x){$("#pattern").value=x.p||x.pattern;let f=x.f||x.flags||"g";$$('input[type=checkbox][value]').forEach(c=>c.checked=f.includes(c.value));$("#test").value=x.t||x.text;render();}
 function nav(p){$$(".tab").forEach(b=>b.classList.toggle("active",b.dataset.page===p));$$("main>section").forEach(s=>s.classList.toggle("hidden",s.id!=="page-"+p));if(p==="saved")showSaved();}
 $$(".tab").forEach(b=>b.onclick=()=>nav(b.dataset.page));
