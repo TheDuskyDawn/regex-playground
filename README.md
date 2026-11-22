@@ -5,6 +5,7 @@ An offline-first, browser-based JavaScript regular-expression learning environme
 ## Features
 
 - Live JavaScript regex tester with highlighted matches, positions, numbered captures and named captures.
+- Visual Regex Builder with reorderable components, literals, character classes, groups, alternation, lookarounds, anchors and quantifiers.
 - Global, ignore-case, multiline, dotAll, Unicode, sticky and indices flags.
 - Replacement preview using JavaScript replacement syntax.
 - Pattern explanations and live heuristic diagnostics for common mistakes and backtracking risks.
@@ -40,7 +41,7 @@ Requires Node.js 18 or later. The app itself does not require Node.
 npm test
 ```
 
-The test suite exercises representative JavaScript regex syntax, flags, captures, replacement behavior, Unicode matching, zero-width matches, and invalid patterns.
+The test suite exercises representative JavaScript regex syntax, flags, captures, replacement behavior, Unicode matching, zero-width matches, invalid patterns, and visual-builder compilation and validation.
 
 ## Compatibility and safety
 
