@@ -241,3 +241,42 @@ $("[data-builder-preset]").forEach(b=>b.onclick=()=>{builderNodes=builderPresets
 renderBuilder();
 
 load(examples[0]);showLessons();showRef();showRecipes();showQuiz();
+
+ 
+// Step debugger: candidate-start trace using sticky matching.
+let debugTrace=[],debugIndex=0,debugPatternSource="";
+function buildDebugTrace(){
+ const pattern=$("#debugPattern").value,text=$("#debugText").value;
+ let flags=$("#debugFlags").value.replace(/[gy]/g,"");
+ if(new Set(flags).size!==flags.length)throw Error("Flags must not contain duplicates.");
+ if(text.length>5000)throw Error("For safety, keep debugger input to 5,000 UTF-16 code units or fewer.");
+ const re=new RegExp(pattern,flags+"y"),steps=[];
+ for(let pos=0;pos<=text.length;pos++){
+  re.lastIndex=pos;
+  const match=re.exec(text);
+  steps.push({pos,matched:!!match,match:match?match[0]:null,end:match?match.index+match[0].length:null,captures:match?Array.from(match).slice(1):[],groups:match&&match.groups?{...match.groups}:null});
+ }
+ debugTrace=steps;debugIndex=0;debugPatternSource=pattern;
+ renderDebugStep();renderDebugSummary();
+}
+function renderDebugStep(){
+ const step=debugTrace[debugIndex];if(!step)return;
+ $("#debugStats").innerHTML='<span class="stat">Step <b>'+(debugIndex+1)+' / '+debugTrace.length+'</b></span><span class="stat">Candidate offset <b>'+step.pos+'</b></span><span class="stat">Result <b>'+(step.matched?'Match':'No match')+'</b></span>';
+ let body='<p><b>Attempt at offset '+step.pos+'</b></p>';
+ if(step.matched){
+  body+='<p class="success">✓ Pattern matched.</p><p>Matched text: <code class="code">'+esc(step.match)+'</code></p><p>Range: ['+step.pos+', '+step.end+')</p>';
+  if(step.captures.length)body+='<p>Numbered captures:</p><ol>'+step.captures.map((v,i)=>'<li><code class="code">'+esc(v===undefined?'(undefined)':v)+'</code></li>').join("")+'</ol>';
+  if(step.groups)body+='<p>Named captures:</p>'+Object.entries(step.groups).map(([k,v])=>'<p><code class="code">'+esc(k)+'</code>: '+esc(v===undefined?'(undefined)':v)+'</p>').join("");
+ }else body+='<p class="muted">No match begins at this position. The next step advances by one UTF-16 code unit.</p>';
+ $("#debugCurrent").innerHTML=body;
+ $("#debugPrev").disabled=debugIndex===0;$("#debugNext").disabled=debugIndex===debugTrace.length-1;
+}
+function renderDebugSummary(){
+ const successes=debugTrace.filter(x=>x.matched);
+ $("#debugSummary").innerHTML='<div class="item">Candidate positions checked: <b>'+debugTrace.length+'</b></div><div class="item">Successful starts: <b>'+successes.length+'</b></div><div class="item">Match offsets: '+(successes.length?successes.map(x=>x.pos).join(", "):"None")+'</div>';
+}
+$("#debugReset").onclick=()=>{try{buildDebugTrace();}catch(e){$("#debugCurrent").innerHTML='<p class="error">'+esc(e.message)+'</p>';$("#debugStats").textContent="Trace could not be built.";$("#debugSummary").textContent="No trace available.";debugTrace=[];}};
+$("#debugNext").onclick=()=>{if(debugIndex<debugTrace.length-1){debugIndex++;renderDebugStep();}};
+$("#debugPrev").onclick=()=>{if(debugIndex>0){debugIndex--;renderDebugStep();}};
+$("#debugAll").onclick=()=>{if(!debugTrace.length)return;$("#debugCurrent").innerHTML=debugTrace.map((s,i)=>'<div class="item"><b>Step '+(i+1)+' · offset '+s.pos+'</b><p class="'+(s.matched?'success':'muted')+'">'+(s.matched?'Match: '+esc(s.match):'No match')+'</p>'+(s.matched?'<p>Range ['+s.pos+', '+s.end+')</p>':"")+'</div>').join("");};
+$("#debugToPlay").onclick=()=>{load({p:$("#debugPattern").value,f:$("#debugFlags").value.replace(/[gy]/g,"")+"g",t:$("#debugText").value});nav("play");};
