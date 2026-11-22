@@ -12,23 +12,23 @@ test("ignore-case matching works with global mode", () => {
 });
 
 test("capture groups preserve their values", () => {
-  const match = /(?<year>\\d{4})-(\\d{2})/.exec("date 2026-11");
+  const match = /(?<year>\d{4})-(\d{2})/.exec("date 2026-11");
   assert.equal(match[1], "2026");
   assert.equal(match[2], "11");
   assert.equal(match.groups.year, "2026");
 });
 
 test("backreferences find adjacent repeated words", () => {
-  assert.equal(/\\b(\\w+)\\s+\\1\\b/i.test("this is is useful"), true);
-  assert.equal(/\\b(\\w+)\\s+\\1\\b/i.test("this is useful"), false);
+  assert.equal(/\b(\w+)\s+\1\b/i.test("this is is useful"), true);
+  assert.equal(/\b(\w+)\s+\1\b/i.test("this is useful"), false);
 });
 
 test("lookahead checks context without consuming it", () => {
-  assert.deepEqual([...("12 USD and 9 EUR".matchAll(/\\d+(?= USD)/g))].map(m => m[0]), ["12"]);
+  assert.deepEqual([...("12 USD and 9 EUR".matchAll(/\d+(?= USD)/g))].map(m => m[0]), ["12"]);
 });
 
 test("Unicode property escapes match non-ASCII letters", () => {
-  assert.equal(/^\\p{Letter}+$/u.test("café"), true);
+  assert.equal(/^\p{Letter}+$/u.test("café"), true);
 });
 
 test("lazy quantifiers stop at the earliest closing delimiter", () => {
@@ -40,7 +40,7 @@ test("zero-width global matches advance safely", () => {
 });
 
 test("replacement supports capture references", () => {
-  assert.equal("Lovelace, Ada".replace(/(\\w+),\\s*(\\w+)/, "$2 $1"), "Ada Lovelace");
+  assert.equal("Lovelace, Ada".replace(/(\w+),\s*(\w+)/, "$2 $1"), "Ada Lovelace");
 });
 
 test("invalid patterns throw a SyntaxError", () => {
