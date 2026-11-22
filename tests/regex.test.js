@@ -103,3 +103,32 @@ test("debug trace rejects oversized input and duplicate flags", () => {
   assert.throws(() => trace(".", "", "12345", 4), /exceeds/);
   assert.throws(() => trace(".", "ii", "x"), /duplicates/);
 });
+
+
+const { convert } = require("../plain-english.js");
+
+test("plain-English converter explains common tokens and flags", () => {
+  const result = convert("^\\\\d{2,4}\\\\s+cat$", "gi");
+  assert.match(result.text, /start of the input/);
+  assert.match(result.text, /digit/);
+  assert.match(result.text, /between 2 and 4 times/);
+  assert.match(result.text, /ignore uppercase/);
+  assert.match(result.text, /find all matches/);
+});
+
+test("plain-English converter explains alternatives and named captures", () => {
+  const result = convert("(?<animal>cat|dog)s?");
+  assert.match(result.text, /named capture group/);
+  assert.match(result.text, /alternatives/);
+  assert.match(result.text, /zero or one time/);
+});
+
+test("plain-English converter explains lookarounds and character classes", () => {
+  assert.match(convert("[^a-z]+(?=!)").text, /not in/);
+  assert.match(convert("(?<!\\\\d)cat").text, /not preceded by/);
+});
+
+test("plain-English converter handles empty patterns and flags", () => {
+  assert.match(convert("", "").text, /empty pattern/);
+  assert.match(convert(".", "s").text, /including line breaks/);
+});
