@@ -9,7 +9,7 @@ An offline-first, browser-based JavaScript regular-expression learning environme
 - Global, ignore-case, multiline, dotAll, Unicode, sticky and indices flags.
 - Replacement preview using JavaScript replacement syntax.
 - Pattern explanations and live heuristic diagnostics for common mistakes and backtracking risks.
-- 15 guided lessons, searchable syntax reference, and practical recipe collection.
+- 15 guided lessons, searchable syntax reference, practical recipe collection, and a searchable library of 120 runnable examples across 12 categories.
 - Multiple-choice challenges with explanations and a running score.
 - Save patterns locally; import and export JSON backups.
 - Installable progressive web app with service-worker caching and offline shell support.
