@@ -91,7 +91,7 @@ function render(){
  try{
  const re=new RegExp(p,f),all=[...text.matchAll(new RegExp(re.source,re.flags.includes("g")?re.flags:re.flags+"g"))];
  $("#stats").innerHTML='<span class="stat">Matches <b>'+all.length+'</b></span><span class="stat">Flags <b>'+esc(f||"none")+'</b></span><span class="stat">Status <b class="success">Valid</b></span>';
- let html="",pos=0;all.forEach((m,i)=>{let a=m.index,b=a+m[0].length;html+=esc(text.slice(pos,a))+'<mark class="hit" title="Match '+(i+1)+'">'+esc(m[0]||"empty")+'</mark>';pos=b;});html+=esc(text.slice(pos));$("#highlighted").innerHTML=html||esc(text);
+ let html="",pos=0;all.forEach((m,i)=>{let a=m.index,b=a+m[0].length;html+=esc(text.slice(pos,a))+'<mark class="hit" title="Match '+(i+1)+'">'+esc(m[0])+'</mark>';pos=b;});html+=esc(text.slice(pos));$("#highlighted").innerHTML=html||esc(text);
  $("#matches").innerHTML=all.length?all.map((m,i)=>'<div class="item"><b>#'+(i+1)+'</b> '+esc(m[0])+' <span class="muted">at '+m.index+'–'+(m.index+m[0].length)+'</span>'+(m.length>1?'<p>Captures: '+m.slice(1).map((v,j)=>'$'+(j+1)+' = '+esc(v??"undefined")).join(" · ")+'</p>':"")+(m.groups?'<p>Named: '+esc(JSON.stringify(m.groups))+'</p>':"")+'</div>').join(""):'<div class="muted">No matches found.</div>';
  $("#replaced").textContent=text.replace(re,$("#replacement").value);explain(p);diagnose(p,f,text);
  }catch(e){$("#stats").innerHTML='<span class="error">Invalid regex: '+esc(e.message)+'</span>';$("#highlighted").textContent=text;$("#matches").textContent="Fix the pattern to inspect matches.";$("#replaced").textContent="";}
@@ -118,7 +118,7 @@ $$(".tab").forEach(b=>b.onclick=()=>nav(b.dataset.page));
 ["pattern","test","replacement"].forEach(id=>$("#"+id).addEventListener("input",render));$$('input[type=checkbox][value]').forEach(c=>c.onchange=render);
 $("#examples").innerHTML=examples.map((x,i)=>'<button class="btn" data-ex="'+i+'">'+esc(x.name)+'</button>').join("");
 $("#examples").onclick=e=>{let b=e.target.closest("[data-ex]");if(b)load(examples[+b.dataset.ex]);};
-$("#copyPattern").onclick=()=>navigator.clipboard?.writeText($("#pattern").value);$("#copyResult").onclick=()=>navigator.clipboard?.writeText($("#test").value);$("#copyReplacement").onclick=()=>navigator.clipboard?.writeText($("#replaced").textContent);
+$("#copyPattern").onclick=()=>navigator.clipboard?.writeText($("#pattern").value);$("#copyResult").onclick=()=>navigator.clipboard?.writeText($("#highlighted").innerText);$("#copyReplacement").onclick=()=>navigator.clipboard?.writeText($("#replaced").textContent);
 $("#clearBtn").onclick=()=>load(examples[0]);
 function saved(){try{return JSON.parse(localStorage.getItem("regex-playground-saved")||"[]");}catch{return[];}}
 $("#savePattern").onclick=()=>{let a=saved();a.unshift({pattern:$("#pattern").value,flags:getFlags(),text:$("#test").value});localStorage.setItem("regex-playground-saved",JSON.stringify(a.slice(0,100)));};
@@ -127,7 +127,7 @@ $("#savedList").onclick=e=>{let l=e.target.closest("[data-load]"),d=e.target.clo
 function download(n,t,type){let a=document.createElement("a"),u=URL.createObjectURL(new Blob([t],{type}));a.href=u;a.download=n;a.click();URL.revokeObjectURL(u);}
 $("#exportSaved").onclick=()=>download("regex-patterns.json",JSON.stringify(saved(),null,2),"application/json");
 $("#importSaved").onchange=async e=>{try{let d=JSON.parse(await e.target.files[0].text());if(!Array.isArray(d))throw Error("Expected an array");localStorage.setItem("regex-playground-saved",JSON.stringify(d));showSaved();}catch(x){alert(x.message);}};
-let done=JSON.parse(localStorage.getItem("regex-lessons-done")||"[]");
+let done=[];try{done=JSON.parse(localStorage.getItem("regex-lessons-done")||"[]");if(!Array.isArray(done))done=[];}catch{done=[];}
 function showLessons(){$("#lessonCount").textContent=done.length+" / "+lessons.length+" completed";$("#learnProgress").style.width=(done.length/lessons.length*100)+"%";$("#lessons").innerHTML=lessons.map((x,i)=>'<button class="item" data-lesson="'+i+'"><b>'+(i+1)+". "+esc(x[0])+'</b><p>'+esc(x[1])+'</p></button>').join("");}
 function lesson(i){let x=lessons[i];$("#lessonDetail").classList.remove("hidden");$("#lessonDetail").innerHTML='<h2>'+esc(x[0])+'</h2><p>'+esc(x[1])+'</p><p>'+esc(x[2])+'</p><p>Example: <code class="code">'+esc(x[3])+'</code></p><p>Try on: '+esc(x[4])+'</p><button class="btn primary" id="lessonTry">Try in playground</button> <button class="btn" id="lessonDone">Mark complete</button>';$("#lessonTry").onclick=()=>{load({p:x[3],f:"g",t:x[4]});nav("play");};$("#lessonDone").onclick=()=>{if(!done.includes(i))done.push(i);localStorage.setItem("regex-lessons-done",JSON.stringify(done));showLessons();};}
 $("#lessons").onclick=e=>{let b=e.target.closest("[data-lesson]");if(b)lesson(+b.dataset.lesson);};
