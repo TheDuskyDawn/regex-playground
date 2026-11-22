@@ -61,13 +61,13 @@ test("visual builder combines shorthands and quantifiers", () => {
     { type: "literal", value: "-" }, { type: "digit", quantifier: "{2,4}" },
     { type: "end" }
   ]);
-  assert.equal(source, "^\\\\d+-\\\\d{2,4}$");
+  assert.equal(source, "^\\d+-\\d{2,4}$");
 });
 
 test("visual builder supports groups, alternation and lookarounds", () => {
   assert.equal(compile([{ type: "alternation", value: "cat|dog" }]), "(?:cat|dog)");
   assert.equal(compile([{ type: "lookahead", value: " USD" }]), "(?= USD)");
-  assert.equal(compile([{ type: "group", value: "\\\\d+" }]), "(\\\\d+)");
+  assert.equal(compile([{ type: "group", value: "\\d+" }]), "(\\d+)");
 });
 
 test("visual builder rejects malformed classes and quantifiers", () => {
@@ -77,6 +77,6 @@ test("visual builder rejects malformed classes and quantifiers", () => {
 });
 
 test("literal escaping covers regex metacharacters", () => {
-  const literal = ".*+?^$()|[]\\\\";
+  const literal = ".*+?^$()|[]\\";
   assert.equal(new RegExp(escapeLiteral(literal)).test(literal), true);
 });
