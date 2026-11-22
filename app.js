@@ -86,8 +86,14 @@ const quiz=[
 ];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function getFlags(){return $$('input[type=checkbox][value]').filter(x=>x.checked).map(x=>x.value).join("");}
+function renderPlainEnglish(){
+ const host=$("#plainEnglish");if(!host)return;
+ try{const result=RegexPlainEnglish.convert($("#pattern").value,getFlags());host.textContent=result.text;host.dataset.uncertain=result.uncertain?"true":"false";}
+ catch(e){host.textContent="Could not translate this pattern: "+e.message;}
+}
 function render(){
  const text=$("#test").value,p=$("#pattern").value,f=getFlags();
+ renderPlainEnglish();
  try{
  const re=new RegExp(p,f),all=[...text.matchAll(new RegExp(re.source,re.flags.includes("g")?re.flags:re.flags+"g"))];
  $("#stats").innerHTML='<span class="stat">Matches <b>'+all.length+'</b></span><span class="stat">Flags <b>'+esc(f||"none")+'</b></span><span class="stat">Status <b class="success">Valid</b></span>';
