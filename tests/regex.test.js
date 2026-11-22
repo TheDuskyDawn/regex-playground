@@ -133,3 +133,22 @@ test("plain-English converter handles empty patterns and flags", () => {
   assert.match(convert("", "").text, /empty pattern/);
   assert.match(convert(".", "s").text, /including line breaks/);
 });
+
+
+const fs = require("node:fs");
+const vm = require("node:vm");
+
+test("categorized example library contains 120 valid runnable patterns", () => {
+  const context = { window: {} };
+  vm.runInNewContext(fs.readFileSync(require.resolve("../examples-library.js"), "utf8"), context);
+  const groups = context.window.REGEX_LIBRARY;
+  assert.equal(groups.length, 12);
+  assert.equal(groups.reduce((sum, group) => sum + group.items.length, 0), 120);
+  for (const group of groups) {
+    assert.equal(group.items.length, 10, group.category);
+    for (const item of group.items) {
+      assert.ok(item.name && item.description && item.t, group.category + ": incomplete example");
+      assert.doesNotThrow(() => new RegExp(item.p, item.f), group.category + ": " + item.name);
+    }
+  }
+});
