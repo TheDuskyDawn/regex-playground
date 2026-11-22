@@ -93,13 +93,51 @@ function render(){
  $("#stats").innerHTML='<span class="stat">Matches <b>'+all.length+'</b></span><span class="stat">Flags <b>'+esc(f||"none")+'</b></span><span class="stat">Status <b class="success">Valid</b></span>';
  let html="",pos=0;all.forEach((m,i)=>{let a=m.index,b=a+m[0].length;html+=esc(text.slice(pos,a))+'<mark class="hit" title="Match '+(i+1)+'">'+esc(m[0])+'</mark>';pos=b;});html+=esc(text.slice(pos));$("#highlighted").innerHTML=html||esc(text);
  $("#matches").innerHTML=all.length?all.map((m,i)=>'<div class="item"><b>#'+(i+1)+'</b> '+esc(m[0])+' <span class="muted">at '+m.index+'–'+(m.index+m[0].length)+'</span>'+(m.length>1?'<p>Captures: '+m.slice(1).map((v,j)=>'$'+(j+1)+' = '+esc(v??"undefined")).join(" · ")+'</p>':"")+(m.groups?'<p>Named: '+esc(JSON.stringify(m.groups))+'</p>':"")+'</div>').join(""):'<div class="muted">No matches found.</div>';
- $("#replaced").textContent=text.replace(re,$("#replacement").value);explain(p);diagnose(p,f,text);
+ $("#replaced").textContent=text.replace(re,$("#replacement").value);explain(p);structure(p);diagnose(p,f,text);
  }catch(e){$("#stats").innerHTML='<span class="error">Invalid regex: '+esc(e.message)+'</span>';$("#highlighted").textContent=text;$("#matches").textContent="Fix the pattern to inspect matches.";$("#replaced").textContent="";}
 }
 function explain(p){
  const terms=[[/\\d/,"digit shorthand"],[/\\w/,"word-character shorthand"],[/\\s/,"whitespace shorthand"],[/\\b/,"word boundary"],[/\\\./,"escaped literal dot"],[/\^/,"start anchor"],[/\$/,"end anchor"],[/\[[^\]]*\]/,"character class"],[/\((?!\?)/,"capturing group"],[/\(\?:/,"non-capturing group"],[/\|/,"alternation"],[/\(\?[=!<]/,"lookaround or special group"],[/\{\d+(,\d*)?\}/,"bounded quantifier"],[/[+*?]\?/,"lazy quantifier"]];
  const found=terms.filter(([re])=>re.test(p)).map(([,label])=>label);
  $("#explain").innerHTML=found.length?found.map(x=>'<div class="item">'+esc(x)+'</div>').join(""):'<div class="item muted">Enter a pattern to see syntax hints.</div>';
+}
+function structure(p){
+ const parts=[];let i=0;
+ const add=(raw,kind,meaning)=>parts.push({raw,kind,meaning});
+ while(i<p.length){
+  const start=i,c=p[i];
+  if(c==="\\"){
+   i++;
+   if(i<p.length){const e=p[i++];
+    if((e==="p"||e==="P")&&p[i]==="{"){i++;while(i<p.length&&p[i]!=="}")i++;if(i<p.length)i++;}
+    else if(e==="k"&&p[i]==="<"){i++;while(i<p.length&&p[i]!==">")i++;if(i<p.length)i++;}
+    else if(e==="u"&&p[i]==="{"){i++;while(i<p.length&&p[i]!=="}")i++;if(i<p.length)i++;}
+   }
+   const raw=p.slice(start,i),e=raw[1]||"";
+   const meanings={d:"digit",D:"non-digit",w:"word character",W:"non-word character",s:"whitespace",S:"non-whitespace",b:"word boundary",B:"non-boundary",n:"newline",t:"tab"};
+   add(raw,"escape",meanings[e]||((e>="0"&&e<="9")?"backreference or legacy escape":"escaped character"));continue;
+  }
+  if(c==="["){
+   i++;let escaped=false;while(i<p.length){const x=p[i++];if(escaped){escaped=false;continue;}if(x==="\\"){escaped=true;continue;}if(x==="]")break;}
+   add(p.slice(start,i),"class","one character from this set");continue;
+  }
+  if(c==="("){
+   if(p.startsWith("(?<=",i)){i+=4;add("(?<=","group","positive lookbehind");continue;}
+   if(p.startsWith("(?<!",i)){i+=4;add("(?<!","group","negative lookbehind");continue;}
+   if(p.startsWith("(?=",i)){i+=3;add("(?=","group","positive lookahead");continue;}
+   if(p.startsWith("(?!",i)){i+=3;add("(?!","group","negative lookahead");continue;}
+   if(p.startsWith("(?:",i)){i+=3;add("(?:","group","non-capturing group");continue;}
+   if(p.startsWith("(?<",i)){i+=3;while(i<p.length&&p[i]!==">")i++;if(i<p.length)i++;add(p.slice(start,i),"group","named capture group");continue;}
+   i++;add("(","group","capturing group");continue;
+  }
+  if(c==="{" ){const end=p.indexOf("}",i+1);if(end>i){i=end+1;add(p.slice(start,i),"quantifier","repetition count");continue;}}
+  if("^$".includes(c)){i++;add(c,"anchor",c==="^"?"start position":"end position");continue;}
+  if("|".includes(c)){i++;add(c,"operator","alternation");continue;}
+  if(")*+?".includes(c)){i++;add(c,"quantifier",c===")"?"close group":c==="*"?"zero or more":c==="+"?"one or more":"optional or lazy");continue;}
+  if(c==="."){i++;add(c,"wildcard","any character except line terminators unless s flag is on");continue;}
+  i++;add(c,"literal","matches this character");
+ }
+ $("#structure").innerHTML=parts.length?parts.map(x=>'<div class="item"><div><code class="code">'+esc(x.raw)+'</code> <span class="muted small">'+esc(x.kind)+'</span></div><p>'+esc(x.meaning)+'</p></div>').join(""):'<div class="item muted">Enter a pattern to inspect its structure.</div>';
 }
 function diagnose(p,f,t){
  const notes=[];
