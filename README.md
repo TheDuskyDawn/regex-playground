@@ -1,11 +1,15 @@
 # Regex Playground
 
+**GitHub Pages:** [https://theduskydawn.github.io/regex-playground/](https://theduskydawn.github.io/regex-playground/)
+
 An offline-first, browser-based JavaScript regular-expression learning environment. It runs entirely in the browser: no account, API key, server, analytics, or build step is required.
 
 ## Features
 
-- Live JavaScript regex tester with highlighted matches, positions, numbered captures and named captures.\n- Offline regex-to-plain-English reader directly beneath the pattern box, explaining common syntax and flags as you type.
-- Visual Regex Builder with reorderable components, literals, character classes, groups, alternation, lookarounds, anchors and quantifiers.\n- Step-by-step debugger that checks candidate start positions and displays matches, offsets, numbered captures and named captures.
+- Live JavaScript regex tester with highlighted matches, positions, numbered captures and named captures.
+- Offline regex-to-plain-English reader directly beneath the pattern box, explaining common syntax and flags as you type.
+- Visual Regex Builder with reorderable components, literals, character classes, groups, alternation, lookarounds, anchors and quantifiers.
+- Step-by-step debugger that checks candidate start positions and displays matches, offsets, numbered captures and named captures.
 - Global, ignore-case, multiline, dotAll, Unicode, sticky and indices flags.
 - Replacement preview using JavaScript replacement syntax.
 - Pattern explanations and live heuristic diagnostics for common mistakes and backtracking risks.
