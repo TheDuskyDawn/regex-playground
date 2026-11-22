@@ -1,0 +1,128 @@
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const examples=[
+{name:"Words and plurals",p:"\\b(cat|dog)s?\\b",f:"giu",t:"A cat, two dogs, and another CAT live here.\nThe catalog is not a cat."},
+{name:"Email-like text",p:"[\\w.+-]+@[\\w-]+\\.[\\w.-]+",f:"gi",t:"Contact hello@example.com or dev.team+test@sub-domain.org."},
+{name:"Hex colors",p:"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\\b",f:"g",t:"Colors: #fff, #12aBcD, #12, #ggg."},
+{name:"Named date groups",p:"(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})",f:"g",t:"Dates: 2025-04-18 and 2026-11-22."},
+{name:"Repeated words",p:"\\b(\\w+)\\s+\\1\\b",f:"gi",t:"This is is a test with with repeated words."},
+{name:"Whitespace",p:"\\s+",f:"g",t:"Too     many\n\nspaces   here."}
+];
+const lessons=[
+["What is regex?","A regular expression is a pattern language for finding, validating, splitting and replacing text. Ordinary letters usually match themselves.","The pattern cat matches the sequence c-a-t anywhere in the input.","cat","A cat naps."],
+["Literal characters and escaping","Most ordinary characters match themselves. Characters such as . * + ? ^ $ { } ( ) | [ ] and backslash have special meaning. Escape a metacharacter to match it literally.","A dot matches almost any character. The escaped form \\. matches a literal period.","\\.","Wait. Really?"],
+["Character classes","Square brackets match one character from a set. Use ranges such as [a-z]. Put ^ first inside brackets to negate the set.","[aeiou] matches one vowel; [^0-9] matches one non-digit.","[aeiou]+","Regex is expressive."],
+["Shorthand classes","\\d matches a digit, \\w a word character and \\s whitespace. Uppercase forms negate them. In JavaScript, \\w is mainly ASCII letters, digits and underscore.","Use \\b\\w+\\b to find word-like tokens.","\\b\\w+\\b","Hello, regex_101!"],
+["Quantifiers","* means zero or more, + one or more, ? zero or one, and {n,m} a repetition range. Quantifiers are greedy by default.","\\d{2,4} matches between two and four consecutive digits.","\\d{2,4}","7 42 2026 123456"],
+["Anchors and boundaries","^ and $ assert start and end positions. With m they work per line. \\b is a word boundary and \\B is not a word boundary.","^cat$ matches an input containing only cat; it does not match bobcat.","^cat$","cat\nbobcat\ncatfish"],
+["Groups and alternation","Parentheses group expressions. Capturing groups remember text; (?:...) groups without capturing. A|B means A or B.","(cat|dog) matches either word and captures the chosen alternative.","\\b(cat|dog)\\b","cat dog bird"],
+["Backreferences","A backreference matches text captured earlier. Use \\1 for the first numbered group or \\k<name> for a named group.","\\b(\\w+)\\s+\\1\\b finds an immediately repeated word.","\\b(\\w+)\\s+\\1\\b","This is is repeated."],
+["Lookaround","Lookahead checks what follows without consuming it; lookbehind checks what precedes. Positive forms require a condition, negative forms require it not to match.","(?=...) positive lookahead; (?!...) negative lookahead; (?<=...) positive lookbehind; (?<!...) negative lookbehind.","\\d+(?= USD)","Price: 25 USD, 40 EUR"],
+["Flags","g global, i ignore case, m multiline, s dotAll, u Unicode, y sticky and d match indices. Modern JavaScript also supports v Unicode sets.","Flags are supplied separately from the pattern, such as new RegExp('cat','gi').","cat","Cat CAT cat"],
+["Greedy and lazy","Greedy quantifiers consume as much as possible. Add ? to make a quantifier lazy so it consumes as little as possible while allowing a match.","Compare <.*> with <.*?> on text containing multiple tags.","<.*?>","<b>one</b> and <i>two</i>"],
+["Unicode and JavaScript","Regex dialects differ. JavaScript supports Unicode property escapes in Unicode-aware mode, but syntax copied from PCRE, Python or .NET may not work unchanged.","Modern engines can use \\p{Letter}+ with the u flag to match Unicode letters.","\\p{Letter}+","café Ελληνικά हिन्दी"],
+["Replacement","String.replace and replaceAll accept regexes. Replacement tokens include $$, $&, $1 and $<name>. A callback handles complex transformations.","Captures can rearrange matched text; replacement strings have their own special tokens.","(\\w+),\\s*(\\w+)","Lovelace, Ada"],
+["Pitfalls and safety","Test edge cases: empty input, newlines, Unicode, punctuation and very long strings. Nested ambiguous quantifiers can cause excessive backtracking.","Avoid running untrusted patterns against huge inputs. JavaScript RegExp has no standard timeout option.","(a+)+$","aaaaaaaaaaaaX"],
+["Readable patterns","Prefer clarity over cleverness. Use named captures, non-capturing groups and tests. Document complex expressions beside the regex.","JavaScript has no free-spacing x flag, so keep comments outside the pattern or build it from documented pieces.","^(?<user>[a-z0-9_]{3,16})$","regex_user\nno spaces"]
+];
+const refs=[
+[".","Any character","Matches any character except line terminators unless s is enabled.","."],
+["\\.","Literal dot","Escape a dot to match a period.","\\."],
+["^","Start anchor","Start of input; line start with m.","^Hello"],
+["$","End anchor","End of input; line end with m.","done$"],
+["\\b","Word boundary","A position at a word edge.","\\bcat\\b"],
+["\\B","Non-boundary","A position that is not a word boundary.","\\Bcat"],
+["\\d / \\D","Digit / non-digit","Digit shorthand and its negation.","\\d{4}"],
+["\\w / \\W","Word / non-word","Primarily ASCII letters, digits and underscore in JavaScript.","\\w+"],
+["\\s / \\S","Whitespace / non-whitespace","Spaces, tabs and line terminators; uppercase negates.","\\s+"],
+["[abc]","Character class","One character from the listed set.","[aeiou]"],
+["[^abc]","Negated class","One character not in the set.","[^0-9]"],
+["[a-z]","Range","One character in an inclusive range.","[A-F0-9]"],
+["*","Zero or more","Repeat preceding atom zero or more times.","ab*"],
+["+","One or more","Repeat preceding atom one or more times.","\\d+"],
+["?","Optional","Zero or one occurrence; also lazy modifier.","colou?r"],
+["{n}","Exact count","Exactly n repetitions.","\\d{4}"],
+["{n,m}","Count range","Between n and m repetitions inclusive.","\\d{2,5}"],
+["*? +? ??","Lazy quantifier","Try the smallest repetition that still permits a match.","<.*?>"],
+["(abc)","Capturing group","Group and remember matched text.","(\\d{4})-(\\d{2})"],
+["(?:abc)","Non-capturing group","Group without creating a capture.","(?:Mr|Ms)"],
+["(?<name>...)","Named capture","Store matched text under a group name.","(?<area>\\d{3})"],
+["\\1","Backreference","Match the text captured by group 1.","(\\w+)\\s+\\1"],
+["A|B","Alternation","Match alternative A or B.","cat|dog"],
+["(?=...)","Positive lookahead","Require a following pattern without consuming it.","\\d+(?= USD)"],
+["(?!...)","Negative lookahead","Require a following pattern not to match.","foo(?!bar)"],
+["(?<=...)","Positive lookbehind","Require a preceding pattern without consuming it.","(?<=\\$)\\d+"],
+["(?<!...)","Negative lookbehind","Require a preceding pattern not to match.","(?<!\\$)\\d+"],
+["g","Global flag","Find all matches, not only the first.","/cat/g"],
+["i","Ignore case","Match without case sensitivity.","/cat/i"],
+["m","Multiline","Make ^ and $ work at line boundaries.","/^item/gm"],
+["s","DotAll","Allow dot to match line terminators.","/a.*b/s"],
+["u","Unicode","Enable Unicode-aware mode and code point escapes.","/\\u{1F600}/u"],
+["y","Sticky","Match only at lastIndex.","/\\w+/y"],
+["d","Indices","Include capture start/end index pairs.","/(cat)/d"]
+];
+const recipes=[
+["Email-like address","[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+","A practical UI check, not a complete validator for every valid email."],
+["HTTP URL","https?:\\/\\/[^\\s/$.?#][^\\s]*","Broad URL finder; use a URL parser for robust validation."],
+["Hex color","#(?:[\\da-f]{3}|[\\da-f]{6})\\b","Find 3- or 6-digit hex color strings."],
+["Repeated word","\\b(\\w+)\\s+\\1\\b","Find adjacent repeated word tokens."],
+["Whitespace runs","\\s+","Find whitespace runs for normalization."],
+["HTML-like tag","<\\/?[a-z][^>]*>","Simple tag-shaped finder, not an HTML parser."],
+["IPv4 shape","\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b","Find IPv4-looking text; validate each octet separately."],
+["Username","^[a-zA-Z0-9_]{3,16}$","ASCII letters, digits and underscore, 3–16 characters."],
+["Slug","^[a-z0-9]+(?:-[a-z0-9]+)*$","Lowercase hyphen-separated slug."],
+["Markdown link","\\[([^\\]]+)\\]\\((https?:\\/\\/[^)\\s]+)\\)","Capture link label and URL from simple Markdown."]
+];
+const quiz=[
+["What does + mean?",["Zero or more","One or more","Zero or one","Exactly one"],1,"+ repeats the preceding atom one or more times."],
+["Which matches a literal dot?",[".","\\.","[.]","Both escaped dot and [.]"],3,"Escape the dot or put it in a character class."],
+["What does \\d match in JavaScript?",["Any letter","A digit 0–9","Whitespace","A decimal point"],1,"\\d is shorthand for an ASCII digit."],
+["Which flag finds all matches?",["i","m","g","s"],2,"The global flag continues after the first match."],
+["What does ^ mean?",["End of string","Start position","Any character","Word boundary"],1,"^ asserts the start of input, or each line with m."],
+["What is (?:cat)?",["Named group","Optional non-capturing group","Backreference","Lookahead"],1,"?: makes the group non-capturing; ? makes it optional."],
+["Which is positive lookahead?",["(?=abc)","(?<=abc)","(?!abc)","\\babc"],0,"Positive lookahead requires a following pattern without consuming it."],
+["What does {2,4} mean?",["2 or 4 only","At least 4","Between 2 and 4","Exactly 24"],2,"The repetition bounds are inclusive."],
+["Which flag ignores case?",["g","i","u","y"],1,"The i flag ignores case distinctions."],
+["What does \\1 do?",["Match digit one","Repeat capture group 1","Start group 1","Escape one"],1,"A numbered backreference matches previously captured text."]
+];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function getFlags(){return $$('input[type=checkbox][value]').filter(x=>x.checked).map(x=>x.value).join("");}
+function render(){
+ const text=$("#test").value,p=$("#pattern").value,f=getFlags();
+ try{
+ const re=new RegExp(p,f),all=[...text.matchAll(new RegExp(re.source,re.flags.includes("g")?re.flags:re.flags+"g"))];
+ $("#stats").innerHTML='<span class="stat">Matches <b>'+all.length+'</b></span><span class="stat">Flags <b>'+esc(f||"none")+'</b></span><span class="stat">Status <b class="success">Valid</b></span>';
+ let html="",pos=0;all.forEach((m,i)=>{let a=m.index,b=a+m[0].length;html+=esc(text.slice(pos,a))+'<mark class="hit" title="Match '+(i+1)+'">'+esc(m[0]||"empty")+'</mark>';pos=b;});html+=esc(text.slice(pos));$("#highlighted").innerHTML=html||esc(text);
+ $("#matches").innerHTML=all.length?all.map((m,i)=>'<div class="item"><b>#'+(i+1)+'</b> '+esc(m[0])+' <span class="muted">at '+m.index+'–'+(m.index+m[0].length)+'</span>'+(m.length>1?'<p>Captures: '+m.slice(1).map((v,j)=>'$'+(j+1)+' = '+esc(v??"undefined")).join(" · ")+'</p>':"")+(m.groups?'<p>Named: '+esc(JSON.stringify(m.groups))+'</p>':"")+'</div>').join(""):'<div class="muted">No matches found.</div>';
+ $("#replaced").textContent=text.replace(re,$("#replacement").value);explain(p);
+ }catch(e){$("#stats").innerHTML='<span class="error">Invalid regex: '+esc(e.message)+'</span>';$("#highlighted").textContent=text;$("#matches").textContent="Fix the pattern to inspect matches.";$("#replaced").textContent="";}
+}
+function explain(p){let terms=[["\\\\d","digit"],["\\\\w","word character"],["\\\\s","whitespace"],["\\\\b","word boundary"],["\\\\.","any character"],["\\\\*","zero or more"],["\\\\+","one or more"],["\\\\?","optional or lazy"],["\\\\^","start anchor"],["\\\\$","end anchor"],["\\\\[","character class"],["\\\\(","group"],["\\\\|","alternation"],["\\\\(\\\\?","lookaround or special group"]];let found=terms.filter(x=>new RegExp(x[0]).test(p)).map(x=>x[1]);$("#explain").innerHTML=found.length?found.map(x=>'<div class="item">'+esc(x)+'</div>').join(""):'<div class="item muted">Enter a pattern to see syntax hints.</div>';}
+function load(x){$("#pattern").value=x.p||x.pattern;let f=x.f||x.flags||"g";$$('input[type=checkbox][value]').forEach(c=>c.checked=f.includes(c.value));$("#test").value=x.t||x.text;render();}
+function nav(p){$$(".tab").forEach(b=>b.classList.toggle("active",b.dataset.page===p));$$("main>section").forEach(s=>s.classList.toggle("hidden",s.id!=="page-"+p));if(p==="saved")showSaved();}
+$$(".tab").forEach(b=>b.onclick=()=>nav(b.dataset.page));
+["pattern","test","replacement"].forEach(id=>$("#"+id).addEventListener("input",render));$$('input[type=checkbox][value]').forEach(c=>c.onchange=render);
+$("#examples").innerHTML=examples.map((x,i)=>'<button class="btn" data-ex="'+i+'">'+esc(x.name)+'</button>').join("");
+$("#examples").onclick=e=>{let b=e.target.closest("[data-ex]");if(b)load(examples[+b.dataset.ex]);};
+$("#copyPattern").onclick=()=>navigator.clipboard?.writeText($("#pattern").value);$("#copyResult").onclick=()=>navigator.clipboard?.writeText($("#test").value);$("#copyReplacement").onclick=()=>navigator.clipboard?.writeText($("#replaced").textContent);
+$("#clearBtn").onclick=()=>load(examples[0]);
+function saved(){try{return JSON.parse(localStorage.getItem("regex-playground-saved")||"[]");}catch{return[];}}
+$("#savePattern").onclick=()=>{let a=saved();a.unshift({pattern:$("#pattern").value,flags:getFlags(),text:$("#test").value});localStorage.setItem("regex-playground-saved",JSON.stringify(a.slice(0,100)));};
+function showSaved(){let a=saved();$("#savedList").innerHTML=a.length?a.map((x,i)=>'<div class="item"><code class="code">'+esc(x.pattern)+'</code> /'+esc(x.flags)+' <button class="btn" data-load="'+i+'">Load</button> <button class="btn" data-del="'+i+'">Delete</button></div>').join(""):'<div class="item muted">No saved patterns yet.</div>';}
+$("#savedList").onclick=e=>{let l=e.target.closest("[data-load]"),d=e.target.closest("[data-del]");if(l){load(saved()[+l.dataset.load]);nav("play");}if(d){let a=saved();a.splice(+d.dataset.del,1);localStorage.setItem("regex-playground-saved",JSON.stringify(a));showSaved();}};
+function download(n,t,type){let a=document.createElement("a"),u=URL.createObjectURL(new Blob([t],{type}));a.href=u;a.download=n;a.click();URL.revokeObjectURL(u);}
+$("#exportSaved").onclick=()=>download("regex-patterns.json",JSON.stringify(saved(),null,2),"application/json");
+$("#importSaved").onchange=async e=>{try{let d=JSON.parse(await e.target.files[0].text());if(!Array.isArray(d))throw Error("Expected an array");localStorage.setItem("regex-playground-saved",JSON.stringify(d));showSaved();}catch(x){alert(x.message);}};
+let done=JSON.parse(localStorage.getItem("regex-lessons-done")||"[]");
+function showLessons(){$("#lessonCount").textContent=done.length+" / "+lessons.length+" completed";$("#learnProgress").style.width=(done.length/lessons.length*100)+"%";$("#lessons").innerHTML=lessons.map((x,i)=>'<button class="item" data-lesson="'+i+'"><b>'+(i+1)+". "+esc(x[0])+'</b><p>'+esc(x[1])+'</p></button>').join("");}
+function lesson(i){let x=lessons[i];$("#lessonDetail").classList.remove("hidden");$("#lessonDetail").innerHTML='<h2>'+esc(x[0])+'</h2><p>'+esc(x[1])+'</p><p>'+esc(x[2])+'</p><p>Example: <code class="code">'+esc(x[3])+'</code></p><p>Try on: '+esc(x[4])+'</p><button class="btn primary" id="lessonTry">Try in playground</button> <button class="btn" id="lessonDone">Mark complete</button>';$("#lessonTry").onclick=()=>{load({p:x[3],f:"g",t:x[4]});nav("play");};$("#lessonDone").onclick=()=>{if(!done.includes(i))done.push(i);localStorage.setItem("regex-lessons-done",JSON.stringify(done));showLessons();};}
+$("#lessons").onclick=e=>{let b=e.target.closest("[data-lesson]");if(b)lesson(+b.dataset.lesson);};
+function showRef(){let q=$("#refSearch").value.toLowerCase();$("#referenceList").innerHTML=refs.filter(x=>x.join(" ").toLowerCase().includes(q)).map(x=>'<div class="item"><div class="head"><b class="code">'+esc(x[0])+'</b><b>'+esc(x[1])+'</b><button class="btn" data-use="'+esc(x[3])+'">Try</button></div><p>'+esc(x[2])+'</p></div>').join("");}
+$("#refSearch").oninput=showRef;$("#referenceList").onclick=e=>{let b=e.target.closest("[data-use]");if(b){load({p:b.dataset.use,f:"g",t:"Try this pattern on sample text."});nav("play");}};
+function showRecipes(){let q=$("#recipeSearch").value.toLowerCase();$("#recipesList").innerHTML=recipes.filter(x=>x.join(" ").toLowerCase().includes(q)).map(x=>'<div class="item"><div class="head"><b>'+esc(x[0])+'</b><button class="btn" data-use="'+esc(x[1])+'">Try recipe</button></div><p>'+esc(x[2])+'</p><code class="code">'+esc(x[1])+'</code></div>').join("");}
+$("#recipeSearch").oninput=showRecipes;$("#recipesList").onclick=e=>{let b=e.target.closest("[data-use]");if(b){load({p:b.dataset.use,f:"g",t:"Test this recipe with valid and invalid examples."});nav("play");}};
+let qi=0,answers={};
+function showQuiz(){let q=quiz[qi],a=answers[qi];$("#quizArea").innerHTML='<span class="pill">Question '+(qi+1)+' / '+quiz.length+'</span><h3>'+esc(q[0])+'</h3>'+q[1].map((v,i)=>'<button class="btn" style="display:block;width:100%;text-align:left;margin:7px 0" data-answer="'+i+'">'+esc(v)+'</button>').join("")+(a===undefined?"":'<p>'+esc(q[3])+'</p><b>'+(a===q[2]?"Correct!":"Not quite — try the next one.")+'</b>');$("#quizScore").textContent="Correct answers: "+Object.keys(answers).filter(k=>answers[k]===quiz[+k][2]).length+" / "+Object.keys(answers).length;}
+$("#quizArea").onclick=e=>{let b=e.target.closest("[data-answer]");if(b){answers[qi]=+b.dataset.answer;showQuiz();}};
+$("#prevQ").onclick=()=>{qi=(qi+quiz.length-1)%quiz.length;showQuiz();};$("#nextQ").onclick=()=>{qi=(qi+1)%quiz.length;showQuiz();};
+$("#installBtn").hidden=true;let installPrompt;addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;$("#installBtn").hidden=false;});$("#installBtn").onclick=async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("#installBtn").hidden=true;}};
+load(examples[0]);showLessons();showRef();showRecipes();showQuiz();
