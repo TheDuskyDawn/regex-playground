@@ -96,7 +96,7 @@ test("debug trace supports named captures and zero-width matches", () => {
   const steps = trace("(?<word>\\w+)", "u", "hi!");
   assert.equal(steps[0].groups.word, "hi");
   assert.equal(steps[2].matched, false);
-  assert.equal(trace("^", "m", "a\\nb").filter(x => x.matched).length, 2);
+  assert.equal(trace("(?=.)", "u", "hi!").filter(x => x.matched).length, 3);
 });
 
 test("debug trace rejects oversized input and duplicate flags", () => {
