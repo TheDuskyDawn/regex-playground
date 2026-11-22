@@ -61,7 +61,7 @@
         else if(c===".")phrase=flags.includes("s")?"any character, including line breaks":"any character except a line break";
         else if(c==="*")phrase="(unexpected repetition marker)";
         else if(c===")") {i--;break;}
-        else {const special="\\\\^$.*+?()[]{}|";let literal=c;while(i<s.length&&!special.includes(s[i]))literal+=s[i++];if("*+?".includes(s[i]||"")&&literal.length>1){i--;literal=literal.slice(0,-1);}phrase="the literal text "+quote(literal);}
+        else {const special="\\\\^$.*+?()[]{}|";let literal=c;while(i<s.length&&!special.includes(s[i]))literal+=s[i++];if(s[i]&&"*+?".includes(s[i])&&literal.length>1){i--;literal=literal.slice(0,-1);}phrase="the literal text "+quote(literal);}
         let quant="";
         if(s[i]==="*"||s[i]==="+"||s[i]==="?"){quant=s[i++];}
         else if(s[i]==="{"){const m=/^\{(\d+)(,(\d*)?)?\}/.exec(s.slice(i));if(m){quant=m[0];i+=quant.length;}}
