@@ -52,7 +52,7 @@
           else if(type==="negative lookahead")phrase="only if it is not followed by "+inside;
           else if(type==="lookbehind")phrase="only if it is preceded by "+inside;
           else if(type==="negative lookbehind")phrase="only if it is not preceded by "+inside;
-          else if(type==="named capture group")phrase="capture as "+quote(name)+": "+inside;
+          else if(type==="named capture group")phrase="named capture group "+quote(name)+" captures "+inside;
           else if(type==="capturing group")phrase="capture: "+inside;
           else phrase="("+inside+")";
           if(i<close){i=close;uncertain.push("group parsing");}
@@ -75,7 +75,7 @@
       const rendered=alternatives.map(a=>a.length?a.join(", then "):"an empty sequence");
       return rendered.length>1?"either "+rendered.join(" OR ")+" (alternatives)":rendered[0];
     }
-    let description=sequence(null);
+    let description=s.length?sequence(null):"an empty pattern (matches an empty position)";
     if(!description)description="an empty pattern (matches an empty position)";
     const flagText=[];
     for(const [f,label] of [["g","find all matches"],["i","ignore uppercase/lowercase differences"],["m","treat line starts and ends as anchors"],["s","let the dot match line breaks"],["u","use Unicode-aware pattern handling"],["y","match only at the current search position"],["d","include match index information"]])if(String(flags||"").includes(f))flagText.push(label);
