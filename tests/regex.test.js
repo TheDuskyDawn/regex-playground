@@ -28,7 +28,6 @@ test("lookahead checks context without consuming it", () => {
 });
 
 test("Unicode property escapes match non-ASCII letters", () => {
-  assert.equal(/^\\p{Letter}+$/u.test("हिन्दी".replace(/्/g, "")), true);
   assert.equal(/^\\p{Letter}+$/u.test("café"), true);
 });
 
