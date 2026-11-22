@@ -249,7 +249,7 @@ renderBuilder();
 
 /* Searchable curated example library */
 const libraryItems=(window.REGEX_LIBRARY||[]).flatMap(group=>group.items.map(item=>({...item,category:group.category})));
-let libraryCategory="All",libraryLimit=30;
+let libraryCategory="All",libraryLimit=120;
 function renderLibrary(){
  const query=$("#librarySearch").value.trim().toLowerCase();
  const categories=["All",...(window.REGEX_LIBRARY||[]).map(x=>x.category)];
