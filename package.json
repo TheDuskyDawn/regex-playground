@@ -1,0 +1,12 @@
+{
+  "name": "regex-playground",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Offline-first JavaScript regular expression learning playground",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
